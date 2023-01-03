@@ -1,0 +1,12 @@
+FROM python:3.9
+
+WORKDIR /app
+
+COPY requirements.txt requirements.txt
+COPY ingest.py ingest.py
+COPY ./data/books_data.csv ./data/books_data.csv
+
+RUN pip install -r requirements.txt
+# ENTRYPOINT ["python", "ingest.py"]
+
+ENTRYPOINT ["bash"]
