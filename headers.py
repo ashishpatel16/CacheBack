@@ -10,13 +10,13 @@ def get_code_from_notebook(filename):
         code = code + '\n'
     return code
 
-def add_headers(codebase):
-    head_before = '''CREATE FUNCTION my_func()
+def add_headers(codebase, function_name):
+    head_before = f"CREATE FUNCTION {function_name}() " + '''
+    RETURNS TEXT
     AS $$ '''
-    head_after = '''$$ LANGUAGE plpythonu;'''
+    head_after = '''$$ LANGUAGE plpython3u;
+    '''
     return head_before + '\n' + codebase + '\n' +head_after
 
-def generate_query(notebook):
-    return add_headers(get_code_from_notebook(notebook))
-
-print(add_headers(get_code_from_notebook('script.ipynb')))
+def generate_query(notebook, function_name):
+    return add_headers(get_code_from_notebook(notebook), function_name)
