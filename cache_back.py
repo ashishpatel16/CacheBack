@@ -8,6 +8,7 @@ DB_USER = ""
 DB_PASS = ""
 DB_HOST = ""
 DB_PORT = 5432 # default
+BLOB_TABLE_NAME = "pipeline_blobs"
 _cached_objects = {}
 
 def init_session(db_name, db_user, db_pass, db_host, db_port=5432):
@@ -18,6 +19,7 @@ def init_session(db_name, db_user, db_pass, db_host, db_port=5432):
     DB_PASS = db_pass
     DB_HOST = db_host
     DB_PORT = db_port
+    print('init session invoked')
 
 def _connect():
     """ Connect to postgres and retrieve all cached variables back into the script """
@@ -26,7 +28,8 @@ def _connect():
                             password=DB_PASS,
                             host=DB_HOST,
                             port=DB_PORT)
-    # Retrieve cached data
+    print('_connect invoked')
+    return conn
 
 
 def insert(df, source_db_table, destination_db_table):
@@ -73,4 +76,38 @@ def remove_from_cache(object_name):
     else:
         raise Exception(f"{object_name} not found.")
 
-remove_from_cache('l')
+def commit(user, password, host, port, db):
+    pass
+
+def send_blob(id, notebook_path, file_name):
+    _create_blob_table()
+    try:
+        conn = _connect()
+        cur = conn.cursor()
+        file_data = read_notebook_as_binary(notebook_path)
+        blob = psycopg2.Binary(file_data)
+        query = f"INSERT INTO {BLOB_TABLE_NAME} (id, file_name, source_notebook, plscript) VALUES({id},'{file_name}',{blob},'plpythonscript')"
+        cur.execute(query)
+        print('Inserted notebook as blob')
+        conn.commit()
+        cur.close()
+    except Exception as e:
+        print(e.args)
+
+def _create_blob_table():
+    print('Trying to create blob table')
+    try:
+        conn = _connect()
+        cur = conn.cursor()
+        query = f"CREATE TABLE {BLOB_TABLE_NAME} (id INT, file_name TEXT, source_notebook BYTEA, plscript TEXT, updated_notebook BYTEA);"
+        cur.execute(query)
+        conn.commit() 
+        cur.close()
+    except Exception as e:
+        print(e.args)
+
+
+def read_notebook_as_binary(notebook_path):
+    with open(notebook_path, 'rb') as file:
+        data = file.read()
+    return data
