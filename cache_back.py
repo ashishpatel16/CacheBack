@@ -86,7 +86,7 @@ def send_blob(id, notebook_path, file_name):
         cur = conn.cursor()
         file_data = read_notebook_as_binary(notebook_path)
         blob = psycopg2.Binary(file_data)
-        query = f"INSERT INTO {BLOB_TABLE_NAME} (id, file_name, source_notebook, plscript) VALUES({id},'{file_name}',{blob},'plpythonscript')"
+        query = f"INSERT INTO {BLOB_TABLE_NAME} (id, file_name, source_notebook, plscript, timestamp) VALUES({id},'{file_name}',{blob},'plpythonscript', NOW())"
         cur.execute(query)
         print('Inserted notebook as blob')
         conn.commit()
@@ -99,7 +99,7 @@ def _create_blob_table():
     try:
         conn = _connect()
         cur = conn.cursor()
-        query = f"CREATE TABLE {BLOB_TABLE_NAME} (id INT, file_name TEXT, source_notebook BYTEA, plscript TEXT, updated_notebook BYTEA);"
+        query = f"CREATE TABLE {BLOB_TABLE_NAME} (id INT, file_name TEXT, source_notebook BYTEA, plscript TEXT, updated_notebook BYTEA, timestamp TIMESTAMP WITH TIME ZONE NOT NULL);"
         cur.execute(query)
         conn.commit() 
         cur.close()
