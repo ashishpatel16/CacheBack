@@ -93,6 +93,12 @@ python3 cli.py --user=admin --password=root --db=reviews --port=5432 --host=revi
 
 ## Some step-by-step guides below:
 
+### The first thing I should do is to create a docker network which lets containers communicate to each other
+
+```bash
+docker network create --driver bridge cacheback_network
+```
+
 ### First, let's first create postgres docker instance:
 
 i.e., to build and run postgres-docker image
@@ -108,6 +114,7 @@ i.e., to build and run postgres-docker image
                 -e POSTGRES_PASSWORD="root" \
                 -e POSTGRES_DB="reviews" \
                 -v "$(pwd)/reviews_data:/var/lib/postgresql/data" \
+                --network="cacheback_network" \
                 -p 5432:5432 \
                 postgres:15
                 
@@ -126,4 +133,36 @@ https://dba.stackexchange.com/questions/83984/connect-to-postgresql-server-fatal
 
 ```bash
 python cli.py --user USER --password PASSWORD --host localhost --port 5432 --db DBNAME          
+```
+
+## Also when creating pgadmin, make sure to connect to cacheback_network
+
+```bash
+docker run -itd \
+                    -e PGADMIN_DEFAULT_EMAIL="user@domain.com" \
+                    -e PGADMIN_DEFAULT_PASSWORD="pgadmin" \
+                    -p 5433:80 \
+                    --network=cacheback_network \
+                    --name mypgadmin \
+                    dpage/pgadmin4
+```
+
+## Build & Run Cacheback
+
+```bash
+docker build -t cacheback:v1 .
+docker run -itd --name cacheback --network=cacheback_network cacheback:v1
+```
+
+## Build & Run Ingestion
+
+```bash
+docker build -t ingestion:v1 .
+docker run -itd --name ingest --network=cacheback_network ingestion:v1
+```
+
+## Execute Command Line for Each Container
+
+```bash
+docker exec -it [container name] bash
 ```

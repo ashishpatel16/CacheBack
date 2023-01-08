@@ -3,9 +3,12 @@ from sqlalchemy import create_engine
 import time
 
 st = time.time()
-df = pd.read_csv('./data/books_data.csv')
+df = pd.read_csv('data/Reviews.csv')
 
-conn_string = "postgresql://admin:root@reviews-pg-db:5432/reviews"
+# this ip address needs to be replaced with postgres's container IP addr
+# to check, docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' postgres-docker
+ip_addr = "localhost"
+conn_string = f"postgresql://admin:root@{ip_addr}:5432/reviews"
 
 engine = create_engine(conn_string)
 

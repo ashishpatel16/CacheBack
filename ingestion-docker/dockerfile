@@ -4,9 +4,10 @@ WORKDIR /app
 
 COPY requirements.txt requirements.txt
 COPY ingest.py ingest.py
-COPY ./data/books_data.csv ./data/books_data.csv
+COPY ./data/Reviews.csv ./data/Reviews.csv
 
 RUN pip install -r requirements.txt
+RUN apt update && apt install vim
 # ENTRYPOINT ["python", "ingest.py"]
 
 ENTRYPOINT ["bash"]
