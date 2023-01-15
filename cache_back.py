@@ -111,3 +111,25 @@ def read_notebook_as_binary(notebook_path):
     with open(notebook_path, 'rb') as file:
         data = file.read()
     return data
+
+
+def read_existing_cache(notebook_path: str):
+    """
+    Attempts to check whether DBMS already has existing cache for current notebook.
+    If it does not exist, prints that the cache does not exist.
+    """
+    print("Attemping to retrieve cache (if existing)")
+    try:
+        conn = _connect()
+        cur = conn.cursor()
+        file_data = read_notebook_as_binary(notebook_path)
+        blob = psycopg2.Binary(file_data)
+        query = f"SELECT * FROM {BLOB_TABLE_NAME} WHERE source_notebook = {blob}"
+        cur = conn.cursor()
+        cur.execute(query)
+        res = cur.fetchall()
+        print(res)
+        cur.close()
+
+    except Exception as e:
+        print(e.args)
