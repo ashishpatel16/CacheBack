@@ -9,6 +9,7 @@ DB_PASS = ""
 DB_HOST = ""
 DB_PORT = 5432 # default
 BLOB_TABLE_NAME = "pipeline_blobs"
+CACHE_TABLE_NAME = "cached_tables"
 _cached_objects = {}
 
 def init_session(db_name, db_user, db_pass, db_host, db_port=5432):
@@ -32,10 +33,10 @@ def _connect():
     return conn
 
 
-def insert(df, source_db_table, destination_db_table):
+def insert(df, source_db_name, destination_db_table):
     """ Inserts a given dataframe into postgres """
     try:
-        conn_string = f"postgresql://{DB_NAME}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{source_db_table}"
+        conn_string = f"postgresql://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{source_db_name}"
         db = create_engine(conn_string)
         conn = db.connect()
         df.to_sql(destination_db_table, con=conn, if_exists='replace', index=False)
@@ -43,10 +44,15 @@ def insert(df, source_db_table, destination_db_table):
     except Exception as e:
         print(e.args)
 
+# When executing code,
+# 1. get all lists of pandas dataframes
+# 2. insert them into cached table (cached_tables)
+
+# the default behaviour of commit should be every pandas table needs to be cached
 def _execute_as_plpython(notebook_path, function_name):
     """ Takes a jupyter notebook and runs it as a plpython function on Postgres Server """
     try:
-        plpython_query = headers.generate_query(notebook_path, function_name)
+        plpython_query = headers.generate_query(notebook_path, function_name, add_code_for_caching=True)
         conn = psycopg2.connect(database=DB_NAME,
                                 user=DB_USER,
                                 password=DB_PASS,
@@ -99,7 +105,7 @@ def _create_blob_table():
     try:
         conn = _connect()
         cur = conn.cursor()
-        query = f"CREATE TABLE {BLOB_TABLE_NAME} (id INT, file_name TEXT, source_notebook BYTEA, plscript TEXT, updated_notebook BYTEA, timestamp TIMESTAMP WITH TIME ZONE NOT NULL);"
+        query = f"CREATE TABLE IF NOT EXISTS {BLOB_TABLE_NAME} (id INT, file_name TEXT, source_notebook BYTEA, plscript TEXT, updated_notebook BYTEA, timestamp TIMESTAMP WITH TIME ZONE NOT NULL);"
         cur.execute(query)
         conn.commit() 
         cur.close()
