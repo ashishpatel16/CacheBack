@@ -22,8 +22,12 @@ docker compose up -d --no-deps --build
 ## Using cli.py to push notebook.ipynb to postgres server
 - Build a container as defined by dockerfile in the base directory. Make sure you run the container inside the same network as postgres database.
 ```bash 
-docker build -t --network=network image:tag .
+docker build -t image:tag .
 ```
+```bash
+docker run -it --network=network image:tag
+```
+
 - Using cli.py
 ```bash
 python3 cli.py --user admin --password root --db reviews --port 5432 --host postgres-database
