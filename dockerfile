@@ -9,5 +9,6 @@ COPY ./cache_back.py cache_back.py
 COPY ./cli.py cli.py
 COPY ./headers.py headers.py
 COPY ./script.ipynb script.ipynb 
+COPY ./script.py script.py 
 
 ENTRYPOINT ["bash"]
