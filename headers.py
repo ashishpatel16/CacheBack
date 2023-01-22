@@ -43,12 +43,16 @@ def generate_query(notebook, function_name, add_code_for_caching = False):
     return add_headers(get_code_from_notebook(notebook), function_name, add_code_for_caching)
 
 def comment_line_by_var_usage(var_name, codebase):
+    '''
+    This needs to comment out all the variable initialisations and in-place methods
+    BEFORE caching of that variable occurs and NOT AFTER.
+    '''
     loc = codebase.split('\n')
     updated_code = ''
     for line in loc:
         temp_line = line.replace(" ", "")
-        if temp_line.startswith(var_name):
-            line = '#' + line
+        if temp_line.startswith(var_name+'=') or temp_line.startswith(var_name+'.'):
+            line = '# ' + line
         updated_code = updated_code + line + '\n'
     return updated_code 
 
