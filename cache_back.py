@@ -54,10 +54,12 @@ def insert(df, source_db_name, destination_db_table):
 # 2. insert them into cached table (cached_tables)
 
 # the default behaviour of commit should be every pandas table needs to be cached
-def _execute_as_plpython(notebook_path, function_name):
+def execute_as_plpython(notebook_path, function_name):
     """ Takes a jupyter notebook and runs it as a plpython function on Postgres Server """
     try:
-        plpython_query = headers.generate_query(notebook_path, function_name, add_code_for_caching=True)
+        plpython_query = headers.generate_query(notebook_path,
+                                                function_name,
+                                                add_code_for_caching=True)
         conn = psycopg2.connect(database=DB_NAME,
                                 user=DB_USER,
                                 password=DB_PASS,
@@ -68,8 +70,6 @@ def _execute_as_plpython(notebook_path, function_name):
         cur.execute(plpython_query)
 
         cur.execute(f"SELECT {function_name}();")
-        res = cur.fetchall()
-        print(res)
     except Exception as e:
         print(e.args)
 

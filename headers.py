@@ -16,23 +16,24 @@ def add_headers(codebase, function_name, add_code_for_caching = False, is_query=
     AS $$ '''
 
     code_for_caching = '''
-    # later replace this with one of the cache_back.py functions
-    # this code will get all the pandas variables from the running code and cache them into DBMS
-    from sqlalchemy import create_engine
-    conn_string = f"postgresql://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
-    db = create_engine(conn_string)
-    conn = db.connect()
-    for i in dir():
-        if not i.startswith('__'):
-            if type(eval(i)) == pd.DataFrame:
-                eval(i).to_sql(i, con=conn, if_exists='replace', index=False)
+# later replace this with one of the cache_back.py functions
+# this code will get all the pandas variables from the running code and cache them into DBMS
+# import cacheback2
+from sqlalchemy import create_engine
+conn_string = f"postgresql://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+db = create_engine(conn_string)
+conn = db.connect()
+for i in dir():
+    if not i.startswith('__'):
+        if type(eval(i)) == pd.DataFrame:
+            eval(i).to_sql(i, con=conn, if_exists='replace', index=False)
+            print(i, "is being inserted")
     '''
 
     head_after = '''$$ LANGUAGE plpython3u;
     '''
     final_query = ''
-    if add_code_for_caching: final_query = head_before + '\n' + codebase + '\n' + \
-        code_for_caching + '\n' + head_after
+    if add_code_for_caching: final_query = head_before + '\n' + codebase + '\n' + code_for_caching + '\n' + head_after
     else: final_query = head_before + '\n' + codebase + '\n' + head_after
 
     if is_query: 
