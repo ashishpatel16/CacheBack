@@ -1,5 +1,6 @@
 import argparse
 import cache_back
+import headers 
 
 def main(params):
     user = params.user
@@ -7,8 +8,11 @@ def main(params):
     host = params.host 
     port = params.port 
     db = params.db
-    cache_back.init_session(db, user, password, host, port)
-    cache_back.send_blob(1, 'script.ipynb', 'init_nb')
+    notebook_path = params.notebook
+
+    file_name = headers.get_notebook_name(notebook_path)
+    cache_back.init_session(file_name, db, user, password, host, port)
+    cache_back.send_blob(notebook_path, file_name)
 
 
 if __name__ == '__main__':
@@ -19,6 +23,7 @@ if __name__ == '__main__':
     parser.add_argument('--host', required=True, help='host for postgres')
     parser.add_argument('--port', required=True, help='port for postgres')
     parser.add_argument('--db', required=True, help='database name for postgres')
+    parser.add_argument('--notebook', required=True, help='Notebook path to be pushed on to postgres')
 
     args = parser.parse_args()
 

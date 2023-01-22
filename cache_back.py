@@ -2,6 +2,7 @@ import psycopg2
 from sqlalchemy import create_engine
 import pandas as pd
 import headers
+import hashlib
 
 DB_NAME = ""
 DB_USER = ""
@@ -10,9 +11,11 @@ DB_HOST = ""
 DB_PORT = 5432 # default
 BLOB_TABLE_NAME = "pipeline_blobs"
 CACHE_TABLE_NAME = "cached_tables"
+NOTEBOOK_NAME = ""
+NOTEBOOK_CODE = ""
 _cached_objects = {}
 
-def init_session(db_name, db_user, db_pass, db_host, db_port=5432):
+def init_session(notebook_name, db_name, db_user, db_pass, db_host, db_port=5432):
     """ Initialises Database parameters for connection to postgres """
     global DB_NAME, DB_USER, DB_PASS, DB_HOST, DB_PORT 
     DB_NAME = db_name
@@ -20,6 +23,8 @@ def init_session(db_name, db_user, db_pass, db_host, db_port=5432):
     DB_PASS = db_pass
     DB_HOST = db_host
     DB_PORT = db_port
+    NOTEBOOK_NAME = notebook_name
+    print(DB_USER,DB_PASS, DB_HOST, DB_PORT)
     print('init session invoked')
 
 def _connect():
@@ -82,9 +87,6 @@ def remove_from_cache(object_name):
     else:
         raise Exception(f"{object_name} not found.")
 
-def commit(user, password, host, port, db):
-    pass
-
 def send_blob(id, notebook_path, file_name):
     _create_blob_table()
     try:
@@ -112,12 +114,10 @@ def _create_blob_table():
     except Exception as e:
         print(e.args)
 
-
 def read_notebook_as_binary(notebook_path):
     with open(notebook_path, 'rb') as file:
         data = file.read()
     return data
-
 
 def read_existing_cache(notebook_path: str):
     """
@@ -139,3 +139,19 @@ def read_existing_cache(notebook_path: str):
 
     except Exception as e:
         print(e.args)
+
+def generate_var_name(df_name, filename=NOTEBOOK_NAME):
+    hash = hashlib.md5(filename.encode()).hexdigest()
+    generated_name = df_name + hash
+    return generated_name
+
+def cache_from_list():
+    try:
+        for df_name, df in _cached_objects.items():
+            df_table = generate_var_name(df_name)
+            insert(df,source_db_table="reviews_data",destination_db_table=df_table)
+            _cache_outputs[df_name] = f"SELECT * FROM {df_table}"
+        
+        # rewrite_pipeline()
+    except Exception as e:
+        print(e.args[0])
