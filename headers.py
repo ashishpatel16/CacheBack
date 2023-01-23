@@ -31,7 +31,7 @@ if not cache_back.cached_objects:
                 eval(i).to_sql(df_table, con=conn, if_exists='replace', index=False)
                 cache_back._cache_outputs[i] = f"SELECT * FROM {df_table}"
 else:
-    cache_back.cache_from_list(sorted(globals()))
+    cache_back.cache_from_list()
 '''
     final_query = head_before + '\n' + codebase + '\n' + enable_cache + '\n' + head_after
     if is_query:

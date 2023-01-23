@@ -135,7 +135,7 @@ def read_notebook_as_binary(notebook_path):
         data = file.read()
     return data
 
-def cache_from_list(vars):
+def cache_from_list():
     try:
         print('Caching Objects ... ')       
         for df_name, df in cached_objects.items():
