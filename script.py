@@ -1,13 +1,13 @@
 import psycopg2
 import pandas as pd
 import time 
+import cache_back 
 
 DB_NAME = "reviews"
-DB_USER = "postgres"
-DB_PASS = "ap16"
-DB_HOST = "localhost"
+DB_USER = "admin"
+DB_PASS = "root"
+DB_HOST = "postgres-database"
 DB_PORT = 5432
-
 try:
     start_time = time.time()
     conn = psycopg2.connect(database=DB_NAME,
@@ -17,9 +17,10 @@ try:
                             port=DB_PORT)
 
     print("Database connected successfully")
+    cache_back.init_session(DB_NAME,DB_USER, DB_PASS, DB_HOST, DB_PORT)
 
-    fetch_query = f"SELECT * FROM {DB_NAME}"
-    fetch_columns_query = "SELECT column_name FROM information_schema.columns WHERE table_name = 'reviews'"
+    fetch_query = f"SELECT * FROM reviews_data"
+    fetch_columns_query = "SELECT column_name FROM information_schema.columns WHERE table_name = 'reviews_data'"
     
     column_names = []
     cur = conn.cursor()
@@ -34,15 +35,16 @@ try:
     res = cur.fetchall()
     df = pd.DataFrame(res, columns=column_names)
     print(df.head())
-    
-    write_query = ""
+    cache_back.add_to_cache(df, 'df_dropped')
+
     cur.close()
     conn.close()
     end_time = time.time()
+    
     print(f"***** Completed in {(end_time-start_time)} seconds. Dataframe shape : {df.shape}")
 
 except Exception as e:
-    print(f"Error : {e.args}")
+    print(f"Error : {e.args[0]}")
 
 '''
 Step 1 : Load data from RDBMS into dataframe.

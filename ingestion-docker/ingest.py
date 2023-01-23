@@ -5,7 +5,7 @@ import time
 st = time.time()
 df = pd.read_csv('./data/books_data.csv')
 
-conn_string = "postgresql://admin:root@reviews-pg-db:5432/reviews"
+conn_string = "postgresql://admin:root@postgres-database:5432/reviews"
 
 engine = create_engine(conn_string)
 
