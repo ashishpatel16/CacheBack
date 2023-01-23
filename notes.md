@@ -13,12 +13,16 @@ sudo docker run -it \
                 -p 5432:5432 \
                 postgres:15.1
 
-Running pgcli 
-sudo pgcli -h localhost -p 5432 -u admin -d reviews
+### What is my ip address of postgres instance for connection to pgadmin?
+
+```bash
+docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' postgres-docker
+```
+
+https://dba.stackexchange.com/questions/83984/connect-to-postgresql-server-fatal-no-pg-hba-conf-entry-for-host
 
 
-Building docker image
-sudo docker build -t imageName:tag .
+### How do I send ipynb as a byte format to postgres (for now)?
 
 Running the image
 sudo docker run -it imageName:tag

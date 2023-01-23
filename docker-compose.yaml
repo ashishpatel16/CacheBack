@@ -2,6 +2,8 @@ services:
   postgres-database:
     build: ./postgres-docker/
     image: postgres-plpython
+
+    container_name: postgres-database
     environment:
       - POSTGRES_USER=admin
       - POSTGRES_PASSWORD=root
@@ -14,11 +16,13 @@ services:
   ingestion-script:
     build: ./ingestion-docker/
     image: ingest-csv
+    container_name: ingestion-script
     depends_on:
       - postgres-database
   
   pgadmin:
     image: dpage/pgadmin4
+    container_name: pgadmin
     environment:
       - PGADMIN_DEFAULT_EMAIL=admin@admin.com
       - PGADMIN_DEFAULT_PASSWORD=root

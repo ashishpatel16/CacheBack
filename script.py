@@ -6,8 +6,10 @@ import cache_back
 DB_NAME = "reviews"
 DB_USER = "admin"
 DB_PASS = "root"
-DB_HOST = "postgres-database"
+DB_HOST = "localhost"
 DB_PORT = 5432
+TABLE_NAME = "reviews_data2"
+
 try:
     start_time = time.time()
     conn = psycopg2.connect(database=DB_NAME,
@@ -19,8 +21,11 @@ try:
     print("Database connected successfully")
     cache_back.init_session(DB_NAME,DB_USER, DB_PASS, DB_HOST, DB_PORT)
 
-    fetch_query = f"SELECT * FROM reviews_data"
-    fetch_columns_query = "SELECT column_name FROM information_schema.columns WHERE table_name = 'reviews_data'"
+
+    fetch_query = f"SELECT * FROM {TABLE_NAME}"
+    fetch_columns_query = f"SELECT column_name FROM information_schema.columns WHERE table_name = '{TABLE_NAME}'"
+
+
     
     column_names = []
     cur = conn.cursor()
@@ -29,6 +34,8 @@ try:
     # Fetch column names from the table for our pandas dataframe
     for s in cur.fetchall():
         column_names.append(s[0])
+
+    print(column_names)
 
     # Fetch actual data from postgres and instantiate DataFrame
     cur.execute(fetch_query)
@@ -42,6 +49,20 @@ try:
     end_time = time.time()
     
     print(f"***** Completed in {(end_time-start_time)} seconds. Dataframe shape : {df.shape}")
+
+
+    #print(dir())
+
+    # later replace this with one of the cache_back.py functions
+    # this code will get all the pandas variables from the running code and cache them into DBMS
+    from sqlalchemy import create_engine
+    conn_string = f"postgresql://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+    db = create_engine(conn_string)
+    conn = db.connect()
+    for i in dir():
+        if not i.startswith('__'):
+            if type(eval(i)) == pd.DataFrame:
+                eval(i).to_sql(i, con=conn, if_exists='replace', index=False)
 
 except Exception as e:
     print(f"Error : {e.args[0]}")
