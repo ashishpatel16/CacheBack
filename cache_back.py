@@ -12,10 +12,10 @@ DB_PORT = 5432 # default
 BLOB_TABLE_NAME = "pipeline_blobs"
 NOTEBOOK_NAME = ""
 NOTEBOOK_CODE = ""
-_cached_objects = {}
+cached_objects = {}
 _cache_outputs = {}
 
-def init_session(notebook_name, db_name, db_user, db_pass, db_host, db_port=5432):
+def init_session(db_name, db_user, db_pass, db_host, db_port=5432, notebook_name=''):
     """ Initialises Database parameters for connection to postgres """
     global DB_NAME, DB_USER, DB_PASS, DB_HOST, DB_PORT 
     DB_NAME = db_name
@@ -38,13 +38,15 @@ def _connect():
     return conn
 
 
-def insert(df, destination_db_table, source_db_name=DB_NAME):
+def insert(df, destination_db_table):
     """ Inserts a given dataframe into postgres """
     try:
-        conn_string = f"postgresql://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{source_db_name}"
+        conn_string = f"postgresql://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
         print(conn_string)
         db = create_engine(conn_string)
+        print('created engine')
         conn = db.connect()
+        print('connected')
         df.to_sql(destination_db_table, con=conn, if_exists='replace', index=False)
         print(f"Cached Dataframe successfully to table: {destination_db_table}")
     except Exception as e:
@@ -64,10 +66,10 @@ def execute_as_plpython(notebook_path, function_name):
         cur = conn.cursor()
         cur.execute(plpython_query)
 
+        print('RUNNING SCRIPT')
         cur.execute(f"SELECT {function_name}();")
         res = cur.fetchall()
-        print(res)
-
+        print('Success execution of plpython')
         conn.commit()
         cur.close()
     except Exception as e:
@@ -75,16 +77,16 @@ def execute_as_plpython(notebook_path, function_name):
 
 def add_to_cache(object, name=''):
     if name == '':
-        name = 'cache_object_' + str(len(_cached_objects))
-    _cached_objects[name] =  object
-    print(f"Object added to cache. Current Cache: {_cached_objects.keys()}")
+        name = 'cache_object_' + str(len(cached_objects))
+    cached_objects[name] =  object
+    print(f"Object added to cache. Current Cache: {cached_objects.keys()}")
 
 def view_cache():
-    print(_cached_objects)
+    print(cached_objects)
 
 def remove_from_cache(object_name):
-    if object_name in _cached_objects.keys():
-        del _cached_objects[object_name]
+    if object_name in cached_objects.keys():
+        del cached_objects[object_name]
         print(f"Removed {object_name}")
     else:
         raise Exception(f"{object_name} not found.")
@@ -135,12 +137,14 @@ def read_notebook_as_binary(notebook_path):
 
 def cache_from_list():
     try:
-        for df_name, df in _cached_objects.items():
+        print('Caching Objects ... ')
+        for df_name, df in cached_objects.items():
+            print(f"inserting {df_name} ...")
             df_table = generate_var_name(df_name)
-            insert(df,source_db_table="reviews_data",destination_db_table=df_table)
+            insert(df,destination_db_table=df_table)
             _cache_outputs[df_name] = f"SELECT * FROM {df_table}"
         
-        rewrite_pipeline()
+        # rewrite_pipeline()
     except Exception as e:
         print(e.args[0])
 
