@@ -11,15 +11,8 @@ def main(params):
     notebook_path = params.notebook
 
     file_name = headers.get_notebook_name(notebook_path)
-<<<<<<< HEAD
     cache_back.init_session(db_name=db, db_user=user, db_pass=password, db_host=host, db_port=port, notebook_name=file_name)
     cache_back.send_blob(notebook_path, file_name)
-=======
-    cache_back.init_session(file_name, db, user, password, host, port)
-    cache_back.send_blob(1, notebook_path, file_name)
-    # also run the notebook and cache the tables!
-    cache_back.execute_as_plpython(notebook_path, file_name)
->>>>>>> main
 
 
 if __name__ == '__main__':
