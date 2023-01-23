@@ -17,7 +17,22 @@ def add_headers(codebase, function_name, is_query=False):
     AS $$ '''
     head_after = '''$$ LANGUAGE plpython3u;
     '''
-    enable_cache = 'cache_back.cache_from_list()'
+    enable_cache = '''
+if not cache_back.cached_objects:
+    from sqlalchemy import create_engine
+    conn_string = f"postgresql://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+    db = create_engine(conn_string)
+    conn = db.connect()
+    for i in dir():
+        if not i.startswith('__'):
+            if type(eval(i)) == pd.DataFrame:
+                print(f"inserting {i} ...")
+                df_table = cache_back.generate_var_name(i)
+                eval(i).to_sql(df_table, con=conn, if_exists='replace', index=False)
+                cache_back._cache_outputs[i] = f"SELECT * FROM {df_table}"
+else:
+    cache_back.cache_from_list(sorted(globals()))
+'''
     final_query = head_before + '\n' + codebase + '\n' + enable_cache + '\n' + head_after
     if is_query:
         final_query = final_query.replace("'", "''")

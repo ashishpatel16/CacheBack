@@ -135,9 +135,9 @@ def read_notebook_as_binary(notebook_path):
         data = file.read()
     return data
 
-def cache_from_list():
+def cache_from_list(vars):
     try:
-        print('Caching Objects ... ')
+        print('Caching Objects ... ')       
         for df_name, df in cached_objects.items():
             print(f"inserting {df_name} ...")
             df_table = generate_var_name(df_name)
