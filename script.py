@@ -1,6 +1,7 @@
 import psycopg2
 import pandas as pd
 import time 
+import cache_back 
 
 DB_NAME = "reviews"
 DB_USER = "admin"
@@ -18,9 +19,12 @@ try:
                             port=DB_PORT)
 
     print("Database connected successfully")
+    cache_back.init_session(DB_NAME,DB_USER, DB_PASS, DB_HOST, DB_PORT)
+
 
     fetch_query = f"SELECT * FROM {TABLE_NAME}"
     fetch_columns_query = f"SELECT column_name FROM information_schema.columns WHERE table_name = '{TABLE_NAME}'"
+
 
     
     column_names = []
@@ -38,11 +42,12 @@ try:
     res = cur.fetchall()
     df = pd.DataFrame(res, columns=column_names)
     print(df.head())
-    
-    write_query = ""
+    cache_back.add_to_cache(df, 'df_dropped')
+
     cur.close()
     conn.close()
     end_time = time.time()
+    
     print(f"***** Completed in {(end_time-start_time)} seconds. Dataframe shape : {df.shape}")
 
 
@@ -60,7 +65,7 @@ try:
                 eval(i).to_sql(i, con=conn, if_exists='replace', index=False)
 
 except Exception as e:
-    print(f"Error : {e.args}")
+    print(f"Error : {e.args[0]}")
 
 '''
 Step 1 : Load data from RDBMS into dataframe.

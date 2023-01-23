@@ -1,0 +1,6 @@
+__pycache__/
+ingestion-docker/data/
+postgres-docker/reviews_data/
+Cacheback/
+.ipynb_checkpoints/
+reviews_data/

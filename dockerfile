@@ -11,4 +11,5 @@ COPY ./headers.py headers.py
 COPY ./script.ipynb script.ipynb 
 COPY ./script.py script.py 
 
-ENTRYPOINT ["bash"]
+# ENTRYPOINT ["python3", "cli.py", "--user=admin", "--password=root", "--db=reviews", "--port=5432", "--host=postgres-database", "--notebook=script.ipyb"]
+ENTRYPOINT [ "bash" ]

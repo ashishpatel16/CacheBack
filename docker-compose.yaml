@@ -2,6 +2,7 @@ services:
   postgres-database:
     build: ./postgres-docker/
     image: postgres-plpython
+
     container_name: postgres-database
     environment:
       - POSTGRES_USER=admin
