@@ -3,6 +3,7 @@ from sqlalchemy import create_engine
 import pandas as pd
 import headers
 import hashlib
+import dependency as dep
 
 DB_NAME = ""
 DB_USER = ""
@@ -10,29 +11,23 @@ DB_PASS = ""
 DB_HOST = ""
 DB_PORT = 5432 # default
 BLOB_TABLE_NAME = "pipeline_blobs"
-<<<<<<< HEAD
+
 NOTEBOOK_NAME = ""
 NOTEBOOK_CODE = ""
 cached_objects = {}
-_cache_outputs = {}
+cache_outputs = {}
+CACHE_TABLE_NAME = "cached_tables"
 
 def init_session(db_name, db_user, db_pass, db_host, db_port=5432, notebook_name=''):
-=======
-CACHE_TABLE_NAME = "cached_tables"
-NOTEBOOK_NAME = ""
-NOTEBOOK_CODE = ""
-_cached_objects = {}
-
-def init_session(notebook_name, db_name, db_user, db_pass, db_host, db_port=5432):
->>>>>>> main
     """ Initialises Database parameters for connection to postgres """
-    global DB_NAME, DB_USER, DB_PASS, DB_HOST, DB_PORT 
+    global DB_NAME, DB_USER, DB_PASS, DB_HOST, DB_PORT, NOTEBOOK_CODE, NOTEBOOK_NAME
     DB_NAME = db_name
     DB_USER = db_user
     DB_PASS = db_pass
     DB_HOST = db_host
     DB_PORT = db_port
     NOTEBOOK_NAME = notebook_name
+    dep.handle_imports(notebook_name + '.ipynb')
     print(DB_USER,DB_PASS, DB_HOST, DB_PORT)
     print('init session invoked')
 
@@ -47,18 +42,13 @@ def _connect():
     return conn
 
 
-<<<<<<< HEAD
+
 def insert(df, destination_db_table):
     """ Inserts a given dataframe into postgres """
     try:
         conn_string = f"postgresql://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
         print(conn_string)
-=======
-def insert(df, source_db_name, destination_db_table):
-    """ Inserts a given dataframe into postgres """
-    try:
-        conn_string = f"postgresql://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{source_db_name}"
->>>>>>> main
+
         db = create_engine(conn_string)
         print('created engine')
         conn = db.connect()
@@ -68,12 +58,7 @@ def insert(df, source_db_name, destination_db_table):
     except Exception as e:
         print(e.args[0])
 
-<<<<<<< HEAD
-def execute_as_plpython(notebook_path, function_name):
-    """ Takes a jupyter notebook and runs it as a plpython function on Postgres Server """
-    try:
-        plpython_query = headers.generate_query(notebook_path, function_name, is_query=False)
-=======
+
 # When executing code,
 # 1. get all lists of pandas dataframes
 # 2. insert them into cached table (cached_tables)
@@ -84,8 +69,9 @@ def execute_as_plpython(notebook_path, function_name):
     try:
         plpython_query = headers.generate_query(notebook_path,
                                                 function_name,
-                                                add_code_for_caching=True)
->>>>>>> main
+                                                add_code_for_caching=False,
+                                                is_query=False)
+
         conn = psycopg2.connect(database=DB_NAME,
                                 user=DB_USER,
                                 password=DB_PASS,
@@ -98,13 +84,11 @@ def execute_as_plpython(notebook_path, function_name):
 
         print('RUNNING SCRIPT')
         cur.execute(f"SELECT {function_name}();")
-<<<<<<< HEAD
         res = cur.fetchall()
-        print('Success execution of plpython')
+        print('Successful execution of plpython')
         conn.commit()
         cur.close()
-=======
->>>>>>> main
+
     except Exception as e:
         print(e.args[0])
 
@@ -124,11 +108,8 @@ def remove_from_cache(object_name):
     else:
         raise Exception(f"{object_name} not found.")
 
-<<<<<<< HEAD
+
 def send_blob(notebook_path, file_name):
-=======
-def send_blob(id, notebook_path, file_name):
->>>>>>> main
     _create_blob_table()
     try:
         conn = _connect()
@@ -141,14 +122,12 @@ def send_blob(id, notebook_path, file_name):
         print('generated query')
         print(plpython_script)
         blob = psycopg2.Binary(file_data)
-<<<<<<< HEAD
+
         print('file read as binary')
 
         query = f"INSERT INTO {BLOB_TABLE_NAME} (file_name, source_notebook, plscript) VALUES('{file_name}',{blob},'''{plpython_script}''')"
         print(query)
-=======
-        query = f"INSERT INTO {BLOB_TABLE_NAME} (id, file_name, source_notebook, plscript, timestamp) VALUES({id},'{file_name}',{blob},'plpythonscript', NOW())"
->>>>>>> main
+
         cur.execute(query)
         print('Blob inserted')
         conn.commit()
@@ -163,28 +142,20 @@ def _create_blob_table():
     try:
         conn = _connect()
         cur = conn.cursor()
-<<<<<<< HEAD
         query = f"CREATE TABLE IF NOT EXISTS {BLOB_TABLE_NAME} (id SERIAL PRIMARY KEY, upload_date TIMESTAMP default current_timestamp, file_name TEXT, source_notebook BYTEA, plscript TEXT, updated_notebook BYTEA);"
         print(query)
-=======
-        query = f"CREATE TABLE IF NOT EXISTS {BLOB_TABLE_NAME} (id INT, file_name TEXT, source_notebook BYTEA, plscript TEXT, updated_notebook BYTEA, timestamp TIMESTAMP WITH TIME ZONE NOT NULL);"
->>>>>>> main
+
         cur.execute(query)
         conn.commit() 
         cur.close()
     except Exception as e:
-<<<<<<< HEAD
-        print(e.args[0])
-=======
         print(e.args)
->>>>>>> main
 
 def read_notebook_as_binary(notebook_path):
     with open(notebook_path, 'rb') as file:
         data = file.read()
     return data
 
-<<<<<<< HEAD
 def cache_from_list():
     try:
         print('Caching Objects ... ')
@@ -192,12 +163,12 @@ def cache_from_list():
             print(f"inserting {df_name} ...")
             df_table = generate_var_name(df_name)
             insert(df,destination_db_table=df_table)
-            _cache_outputs[df_name] = f"SELECT * FROM {df_table}"
+            cache_outputs[df_name] = f"SELECT * FROM {df_table}"
         
         # rewrite_pipeline()
     except Exception as e:
         print(e.args[0])
-=======
+
 def read_existing_cache(notebook_path: str):
     """
     Attempts to check whether DBMS already has existing cache for current notebook.
@@ -218,16 +189,14 @@ def read_existing_cache(notebook_path: str):
 
     except Exception as e:
         print(e.args)
->>>>>>> main
 
 def generate_var_name(df_name, filename=NOTEBOOK_NAME):
     hash = hashlib.md5(filename.encode()).hexdigest()
     generated_name = df_name + hash
     return generated_name
 
-<<<<<<< HEAD
 def rewrite_pipeline():
-    for df_name, query in _cache_outputs.items():
+    for df_name, query in cache_outputs.items():
         updated_code = headers.comment_line_by_var_usage(df_name, NOTEBOOK_CODE)
         headers.rewrite_var_definition(df_name, query, updated_code)
         NOTEBOOK_CODE = updated_code + get_sql_conn_code(query=query, df_name=df_name)
@@ -242,15 +211,4 @@ def get_sql_conn_code(query, df_name):
     l4 = "res = cur.fetchall()"
     l5 = f"{df_name} = pd.DataFrame(res)"
     return l1 + '\n' + l2 + l3 + '\n' + l4 + l5 + '\n' 
-=======
-def cache_from_list():
-    try:
-        for df_name, df in _cached_objects.items():
-            df_table = generate_var_name(df_name)
-            insert(df,source_db_table="reviews_data",destination_db_table=df_table)
-            _cache_outputs[df_name] = f"SELECT * FROM {df_table}"
-        
-        # rewrite_pipeline()
-    except Exception as e:
-        print(e.args[0])
->>>>>>> main
+

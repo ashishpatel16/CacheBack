@@ -9,7 +9,7 @@ COPY ./cache_back.py cache_back.py
 COPY ./cli.py cli.py
 COPY ./headers.py headers.py
 COPY ./script.ipynb script.ipynb 
-COPY ./script.py script.py 
+COPY ./dependency.py dependency.py 
 
 # ENTRYPOINT ["python3", "cli.py", "--user=admin", "--password=root", "--db=reviews", "--port=5432", "--host=postgres-database", "--notebook=script.ipyb"]
 ENTRYPOINT [ "bash" ]
