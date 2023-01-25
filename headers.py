@@ -48,11 +48,15 @@ def comment_line_by_var_usage(var_name, codebase):
     '''
     loc = codebase.split('\n')
     updated_code = ''
+    not_yet_observed = True # add_to_cache not yet observed?
     for line in loc:
         temp_line = line.replace(" ", "")
-        if temp_line.startswith(var_name+'=') or temp_line.startswith(var_name+'.'):
-            line = '# ' + line
-
+        if not_yet_observed:
+            if temp_line.startswith(var_name+'=') or temp_line.startswith(var_name+'.'):
+                line = '# ' + line
+            if f"add_to_cache({var_name}," in temp_line:
+                line = '# ' + line
+                not_yet_observed = False
         updated_code = updated_code + line + '\n'
     return updated_code 
 
