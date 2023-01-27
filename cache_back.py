@@ -3,6 +3,7 @@ from sqlalchemy import create_engine
 import pandas as pd
 import headers
 import hashlib
+import dependency as dep
 
 DB_NAME = ""
 DB_USER = ""
@@ -13,17 +14,20 @@ BLOB_TABLE_NAME = "pipeline_blobs"
 NOTEBOOK_NAME = ""
 NOTEBOOK_CODE = ""
 cached_objects = {}
-_cache_outputs = {}
+cache_outputs = {}
+CACHE_TABLE_NAME = "cached_tables"
+
 
 def init_session(db_name, db_user, db_pass, db_host, db_port=5432, notebook_name=''):
     """ Initialises Database parameters for connection to postgres """
-    global DB_NAME, DB_USER, DB_PASS, DB_HOST, DB_PORT 
+    global DB_NAME, DB_USER, DB_PASS, DB_HOST, DB_PORT, NOTEBOOK_CODE, NOTEBOOK_NAME
     DB_NAME = db_name
     DB_USER = db_user
     DB_PASS = db_pass
     DB_HOST = db_host
     DB_PORT = db_port
     NOTEBOOK_NAME = notebook_name
+    dep.handle_imports(notebook_name + '.ipynb')
     print(DB_USER,DB_PASS, DB_HOST, DB_PORT)
     print('init session invoked')
 
@@ -52,10 +56,18 @@ def insert(df, destination_db_table):
     except Exception as e:
         print(e.args[0])
 
+# When executing code,
+# 1. get all lists of pandas dataframes
+# 2. insert them into cached table (cached_tables)
+
+# the default behaviour of commit should be every pandas table needs to be cached
 def execute_as_plpython(notebook_path, function_name):
     """ Takes a jupyter notebook and runs it as a plpython function on Postgres Server """
     try:
-        plpython_query = headers.generate_query(notebook_path, function_name, is_query=False)
+        plpython_query = headers.generate_query(notebook_path,
+                                                function_name,
+                                                add_code_for_caching=False,
+                                                is_query=False)
         conn = psycopg2.connect(database=DB_NAME,
                                 user=DB_USER,
                                 password=DB_PASS,
@@ -69,7 +81,7 @@ def execute_as_plpython(notebook_path, function_name):
         print('RUNNING SCRIPT')
         cur.execute(f"SELECT {function_name}();")
         res = cur.fetchall()
-        print('Success execution of plpython')
+        print('Successful execution of plpython')
         conn.commit()
         cur.close()
     except Exception as e:
@@ -128,7 +140,7 @@ def _create_blob_table():
         conn.commit() 
         cur.close()
     except Exception as e:
-        print(e.args[0])
+        print(e.args)
 
 def read_notebook_as_binary(notebook_path):
     with open(notebook_path, 'rb') as file:
@@ -142,11 +154,32 @@ def cache_from_list():
             print(f"inserting {df_name} ...")
             df_table = generate_var_name(df_name)
             insert(df,destination_db_table=df_table)
-            _cache_outputs[df_name] = f"SELECT * FROM {df_table}"
+            cache_outputs[df_name] = f"SELECT * FROM {df_table}"
         
         # rewrite_pipeline()
     except Exception as e:
         print(e.args[0])
+
+def read_existing_cache(notebook_path: str):
+    """
+    Attempts to check whether DBMS already has existing cache for current notebook.
+    If it does not exist, prints that the cache does not exist.
+    """
+    print("Attemping to retrieve cache (if existing)")
+    try:
+        conn = _connect()
+        cur = conn.cursor()
+        file_data = read_notebook_as_binary(notebook_path)
+        blob = psycopg2.Binary(file_data)
+        query = f"SELECT * FROM {BLOB_TABLE_NAME} WHERE source_notebook = {blob}"
+        cur = conn.cursor()
+        cur.execute(query)
+        res = cur.fetchall()
+        print(res)
+        cur.close()
+
+    except Exception as e:
+        print(e.args)
 
 def generate_var_name(df_name, filename=NOTEBOOK_NAME):
     hash = hashlib.md5(filename.encode()).hexdigest()
@@ -154,7 +187,7 @@ def generate_var_name(df_name, filename=NOTEBOOK_NAME):
     return generated_name
 
 def rewrite_pipeline():
-    for df_name, query in _cache_outputs.items():
+    for df_name, query in cache_outputs.items():
         updated_code = headers.comment_line_by_var_usage(df_name, NOTEBOOK_CODE)
         headers.rewrite_var_definition(df_name, query, updated_code)
         NOTEBOOK_CODE = updated_code + get_sql_conn_code(query=query, df_name=df_name)
