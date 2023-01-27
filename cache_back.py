@@ -11,12 +11,12 @@ DB_PASS = ""
 DB_HOST = ""
 DB_PORT = 5432 # default
 BLOB_TABLE_NAME = "pipeline_blobs"
-
 NOTEBOOK_NAME = ""
 NOTEBOOK_CODE = ""
 cached_objects = {}
 cache_outputs = {}
 CACHE_TABLE_NAME = "cached_tables"
+
 
 def init_session(db_name, db_user, db_pass, db_host, db_port=5432, notebook_name=''):
     """ Initialises Database parameters for connection to postgres """
@@ -42,13 +42,11 @@ def _connect():
     return conn
 
 
-
 def insert(df, destination_db_table):
     """ Inserts a given dataframe into postgres """
     try:
         conn_string = f"postgresql://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
         print(conn_string)
-
         db = create_engine(conn_string)
         print('created engine')
         conn = db.connect()
@@ -57,7 +55,6 @@ def insert(df, destination_db_table):
         print(f"Cached Dataframe successfully to table: {destination_db_table}")
     except Exception as e:
         print(e.args[0])
-
 
 # When executing code,
 # 1. get all lists of pandas dataframes
@@ -71,7 +68,6 @@ def execute_as_plpython(notebook_path, function_name):
                                                 function_name,
                                                 add_code_for_caching=False,
                                                 is_query=False)
-
         conn = psycopg2.connect(database=DB_NAME,
                                 user=DB_USER,
                                 password=DB_PASS,
@@ -88,7 +84,6 @@ def execute_as_plpython(notebook_path, function_name):
         print('Successful execution of plpython')
         conn.commit()
         cur.close()
-
     except Exception as e:
         print(e.args[0])
 
@@ -108,7 +103,6 @@ def remove_from_cache(object_name):
     else:
         raise Exception(f"{object_name} not found.")
 
-
 def send_blob(notebook_path, file_name):
     _create_blob_table()
     try:
@@ -122,12 +116,10 @@ def send_blob(notebook_path, file_name):
         print('generated query')
         print(plpython_script)
         blob = psycopg2.Binary(file_data)
-
         print('file read as binary')
 
         query = f"INSERT INTO {BLOB_TABLE_NAME} (file_name, source_notebook, plscript) VALUES('{file_name}',{blob},'''{plpython_script}''')"
         print(query)
-
         cur.execute(query)
         print('Blob inserted')
         conn.commit()
@@ -144,7 +136,6 @@ def _create_blob_table():
         cur = conn.cursor()
         query = f"CREATE TABLE IF NOT EXISTS {BLOB_TABLE_NAME} (id SERIAL PRIMARY KEY, upload_date TIMESTAMP default current_timestamp, file_name TEXT, source_notebook BYTEA, plscript TEXT, updated_notebook BYTEA);"
         print(query)
-
         cur.execute(query)
         conn.commit() 
         cur.close()
@@ -158,7 +149,7 @@ def read_notebook_as_binary(notebook_path):
 
 def cache_from_list():
     try:
-        print('Caching Objects ... ')
+        print('Caching Objects ... ')       
         for df_name, df in cached_objects.items():
             print(f"inserting {df_name} ...")
             df_table = generate_var_name(df_name)
@@ -211,4 +202,3 @@ def get_sql_conn_code(query, df_name):
     l4 = "res = cur.fetchall()"
     l5 = f"{df_name} = pd.DataFrame(res)"
     return l1 + '\n' + l2 + l3 + '\n' + l4 + l5 + '\n' 
-
