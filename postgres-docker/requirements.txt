@@ -26,4 +26,5 @@ tomli==2.0.1
 wcwidth==0.2.5
 wheel==0.38.4
 cacheback==0.1.19
+jupytext
 

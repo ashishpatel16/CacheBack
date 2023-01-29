@@ -1,6 +1,6 @@
 import argparse
-import cache_back
-import headers 
+from cacheback2 import cache_back
+from cacheback2 import headers 
 
 def main(params):
     user = params.user
@@ -11,8 +11,10 @@ def main(params):
     notebook_path = params.notebook
 
     file_name = headers.get_notebook_name(notebook_path)
-    cache_back.init_session(db_name=db, db_user=user, db_pass=password, db_host=host, db_port=port, notebook_name=file_name)
+    cache_back.init_session(db_name=db, db_user=user, db_pass=password, db_host=host, db_port=port, notebook_name=notebook_path)
     cache_back.send_blob(notebook_path, file_name)
+    cache_back.rewrite_pipeline()
+    cache_back.return_new_notebook(notebook_path)
 
 
 if __name__ == '__main__':
