@@ -48,7 +48,8 @@ def comment_line_by_var_usage(var_name, sql_query, codebase):
     This needs to comment out all the variable initialisations and in-place methods
     BEFORE caching of that variable occurs and NOT AFTER.
     '''
-    is_default_caching = not "add_to_cache" in codebase
+    # quite fragile; it relies on "add_to_cache" text appearances. Might need to fix it later 
+    is_default_caching = not ("add_to_cache" in codebase)
     loc = codebase.split('\n')
     updated_code = ''
     not_yet_observed = True # add_to_cache not yet observed?
@@ -70,7 +71,7 @@ def comment_line_by_var_usage(var_name, sql_query, codebase):
             if not_yet_observed:
                 if temp_line.startswith(var_name+'=') or temp_line.startswith(var_name+'.'):
                     line = spaces * ' ' + '# ' + line
-                if f"add_to_cache(\'{var_name}\'" in temp_line or f'add_to_cache(\"{var_name}\"' in temp_line:
+                if f"add_to_cache({var_name}" in temp_line and f"#add_to_cache({var_name}" not in temp_line:
                     line = spaces * ' ' + '# ' + line
                     line = _code_for_accessing_cache(line, var_name, sql_query)
 

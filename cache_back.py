@@ -96,10 +96,12 @@ def execute_as_plpython(notebook_path, function_name):
     except Exception as e:
         print(e.args[0])
 
-# MAJOR CHANGE: no custom variable name allowed
-# also, the object should be in string format
-def add_to_cache(object: str):
-    cached_objects[object] =  eval(object)
+def add_to_cache(table: pd.DataFrame, object: str):
+    '''
+    please make the table varialbe and the object name the same
+    i.e., add_to_cache(df1, 'df1')
+    '''
+    cached_objects[object] =  table
     print(f"Object added to cache. Current Cache: {cached_objects.keys()}")
 
 def view_cache():
