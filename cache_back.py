@@ -53,7 +53,7 @@ def insert(df, destination_db_table):
         print('created engine')
         conn = db.connect()
         print('connected')
-        df.to_sql(destination_db_table, con=conn, if_exists='replace', index=False)
+        df.to_sql(destination_db_table, con=conn, if_exists='replace', index=False, chunksize = 1000)
         print(f"Cached Dataframe successfully to table: {destination_db_table}")
     except Exception as e:
         print(e.args[0])
